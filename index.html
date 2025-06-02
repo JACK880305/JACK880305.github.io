@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>潔西卡的百寶袋</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #334155; /* Slate-700 text */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #4A5568; /* Slate-600 */
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #2c5282; /* Indigo-700 */
+        }
+        h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            border-bottom: 2px solid #e2e8f0; /* Slate-200 */
+            padding-bottom: 0.5rem;
+        }
+        label {
+            font-weight: 500;
+            margin-right: 0.5rem;
+            color: #4A5568; /* Slate-600 */
+        }
+        select, button {
+            padding: 0.6rem 1rem;
+            border-radius: 8px;
+            border: 1px solid #CBD5E0; /* Slate-300 */
+            background-color: white;
+            color: #334155;
+            font-size: 1rem;
+            transition: all 0.2s ease-in-out;
+        }
+        select:focus, button:focus {
+            outline: none;
+            border-color: #4299e1; /* Blue-500 */
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+        }
+        button {
+            background-color: #4299e1; /* Blue-500 */
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #3182ce; /* Blue-600 */
+        }
+        button.gemini-button {
+            background-color: #6366f1; /* Indigo-500 */
+        }
+        button.gemini-button:hover {
+            background-color: #4f46e5; /* Indigo-600 */
+        }
+        .output-area {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f7fafc; /* Slate-50 */
+            border: 1px solid #e2e8f0; /* Slate-200 */
+            border-radius: 8px;
+            min-height: 50px;
+            font-size: 1.1rem;
+            color: #2d3748; /* Slate-800 */
+            white-space: pre-wrap; /* Preserve line breaks from API */
+        }
+        .grid-cols-auto {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+        /* Circle of Fifths specific styles */
+        #circleOfFifthsContainer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            min-height: 500px; /* Ensure space for the circle */
+        }
+        #circleSvg {
+            width: 450px;
+            height: 450px;
+            overflow: visible; /* Important for text labels outside paths */
+        }
+        .key-segment {
+            cursor: pointer;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .key-segment:hover {
+            opacity: 0.7;
+        }
+        .circle-text {
+            font-size: 12px;
+            font-weight: bold;
+            text-anchor: middle;
+            pointer-events: none; /* So text doesn't interfere with path hover */
+            fill: #1A202C; /* Gray-900 */
+        }
+        .relative-minor-text {
+            font-size: 10px;
+            fill: #4A5568; /* Gray-600 */
+        }
+        #circleTooltip {
+            position: absolute;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            pointer-events: none; /* Don't let tooltip block mouse events */
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+            min-width: 200px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        #circleTooltip.visible {
+            opacity: 1;
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border-left-color: #4299e1; /* Blue-500 */
+            animation: spin 1s ease infinite;
+            display: inline-block;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container">
+        <h1>潔西卡的百寶袋</h1>
+
+        <section id="scaleFinder">
+            <h2>音階查詢</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4">
+                <div>
+                    <label for="scaleRootNote">根音：</label>
+                    <select id="scaleRootNote" class="w-full"></select>
+                </div>
+                <div>
+                    <label for="scaleTonality">調性：</label>
+                    <select id="scaleTonality" class="w-full">
+                        <option value="major">自然大調</option>
+                        <option value="minor">自然小調</option>
+                    </select>
+                </div>
+                <button id="showScaleButton" class="w-full md:w-auto">顯示音階</button>
+            </div>
+            <div id="scaleOutput" class="output-area">請選擇根音和調性以顯示音階。</div>
+        </section>
+
+        <section id="chordFinder" class="mt-8">
+            <h2>功能和弦查詢</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end mb-4">
+                <div>
+                    <label for="chordKeyRootNote">調的根音：</label>
+                    <select id="chordKeyRootNote" class="w-full"></select>
+                </div>
+                <div>
+                    <label for="chordKeyTonality">調的調性：</label>
+                    <select id="chordKeyTonality" class="w-full">
+                        <option value="major">自然大調</option>
+                        <option value="minor">自然小調</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="functionalDegree">和弦級數：</label>
+                    <select id="functionalDegree" class="w-full"></select>
+                </div>
+                <div>
+                    <label for="chordType">和弦類型：</label>
+                    <select id="chordType" class="w-full">
+                        <option value="triad">三和弦</option>
+                        <option value="seventh">七和弦</option>
+                        <option value="ninth">九和弦</option>
+                        <option value="sus4">掛留四和弦 (Sus4)</option>
+                        <option value="sus2">掛留二和弦 (Sus2)</option>
+                        <option value="dominant7sus4">屬七掛留四和弦 (7sus4)</option>
+                    </select>
+                </div>
+            </div>
+             <button id="showChordButton" class="w-full md:w-auto mb-4">顯示和弦組成音</button>
+            <div id="chordOutput" class="output-area">請選擇調、級數和和弦類型。</div>
+        </section>
+
+        <section id="interactiveCircle" class="mt-8">
+            <h2>互動式五度圈</h2>
+            <p class="text-center text-gray-600 mb-4">將滑鼠移至五度圈的調性上查看詳細資訊。</p>
+            <div id="circleOfFifthsContainer">
+                <svg id="circleSvg"></svg>
+                <div id="circleTooltip"></div>
+            </div>
+        </section>
+
+        <section id="progressionHelper" class="mt-8">
+            <h2>✨ 和弦進行小幫手</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end mb-4">
+                <div>
+                    <label for="progKeyRootNote">調的根音：</label>
+                    <select id="progKeyRootNote" class="w-full"></select>
+                </div>
+                <div>
+                    <label for="progKeyTonality">調的調性：</label>
+                    <select id="progKeyTonality" class="w-full">
+                        <option value="major">自然大調</option>
+                        <option value="minor">自然小調</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="progStartingDegree">起始和弦級數：</label>
+                    <select id="progStartingDegree" class="w-full"></select>
+                </div>
+            </div>
+            <button id="generateProgressionButton" class="w-full md:w-auto mb-4 gemini-button">✨ 產生和弦進行建議</button>
+            <div id="progressionOutput" class="output-area">請選擇調性與起始和弦，然後點擊按鈕以獲取建議。</div>
+        </section>
+
+        <section id="songwritingInspiration" class="mt-8">
+            <h2>✨ 歌曲創作靈感</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end mb-4">
+                 <div>
+                    <label for="ideaKeyRootNote">歌曲根音：</label>
+                    <select id="ideaKeyRootNote" class="w-full"></select>
+                </div>
+                <div>
+                    <label for="ideaKeyTonality">歌曲調性：</label>
+                    <select id="ideaKeyTonality" class="w-full">
+                        <option value="major">自然大調</option>
+                        <option value="minor">自然小調</option>
+                    </select>
+                </div>
+            </div>
+            <button id="generateSongIdeaButton" class="w-full md:w-auto mb-4 gemini-button">✨ 獲取創作靈感</button>
+            <div id="songIdeaOutput" class="output-area">請選擇歌曲的根音與調性，然後點擊按鈕以獲取靈感。</div>
+        </section>
+
+    </div>
+
+    <script>
+        // --- 音樂理論數據 ---
+        const notesSharp = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const notesFlat = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+
+        const keySharpFlatPreference = {
+            'C': 0, 'G': 1, 'D': 2, 'A': 3, 'E': 4, 'B': 5, 'F#': 6, 'C#': 7,
+            'F': -1, 'Bb': -2, 'Eb': -3, 'Ab': -4, 'Db': -5, 'Gb': -6, 'Cb': -7
+        };
+        
+        function getNoteName(noteIndex, keyRootNameForPreference) {
+            noteIndex = noteIndex % 12;
+            const preference = keySharpFlatPreference[keyRootNameForPreference] !== undefined ? keySharpFlatPreference[keyRootNameForPreference] : (notesSharp.includes(keyRootNameForPreference) ? 1 : -1) ;
+            if (preference < 0) {
+                return notesFlat[noteIndex];
+            } else {
+                return notesSharp[noteIndex];
+            }
+        }
+
+        const scalePatterns = {
+            major: { name: '大調', intervals: [0, 2, 4, 5, 7, 9, 11] },
+            minor: { name: '自然小調', intervals: [0, 2, 3, 5, 7, 8, 10] }
+        };
+
+        const chordFormulas = {
+            majorTriad: { name: '大三和弦', intervals: [0, 4, 7] },
+            minorTriad: { name: '小三和弦', intervals: [0, 3, 7] },
+            diminishedTriad: { name: '減三和弦', intervals: [0, 3, 6] },
+            major7: { name: '大七和弦 (M7)', intervals: [0, 4, 7, 11] },
+            dominant7: { name: '屬七和弦 (7)', intervals: [0, 4, 7, 10] },
+            minor7: { name: '小七和弦 (m7)', intervals: [0, 3, 7, 10] },
+            halfDiminished7: { name: '半減七和弦 (m7b5)', intervals: [0, 3, 6, 10] },
+            diminished7: { name: '減七和弦 (dim7)', intervals: [0, 3, 6, 9] },
+            major9: { name: '大九和弦 (M9)', intervals: [0, 4, 7, 11, 14] },
+            dominant9: { name: '屬九和弦 (9)', intervals: [0, 4, 7, 10, 14] },
+            minor9: { name: '小九和弦 (m9)', intervals: [0, 3, 7, 10, 14] },
+            sus4: { name: '掛留四和弦 (Sus4)', intervals: [0, 5, 7] },
+            sus2: { name: '掛留二和弦 (Sus2)', intervals: [0, 2, 7] },
+            dominant7sus4: { name: '屬七掛留四和弦 (7sus4)', intervals: [0, 5, 7, 10] },
+        };
+
+        const majorKeyFunctionalChordsMap = {
+            'I': { baseQuality: 'majorTriad', seventh: 'major7', ninth: 'major9', scaleDegree: 0 },
+            'ii': { baseQuality: 'minorTriad', seventh: 'minor7', ninth: 'minor9', scaleDegree: 1 },
+            'iii': { baseQuality: 'minorTriad', seventh: 'minor7', ninth: 'minor9', scaleDegree: 2 },
+            'IV': { baseQuality: 'majorTriad', seventh: 'major7', ninth: 'major9', scaleDegree: 3 },
+            'V': { baseQuality: 'majorTriad', seventh: 'dominant7', ninth: 'dominant9', scaleDegree: 4 },
+            'vi': { baseQuality: 'minorTriad', seventh: 'minor7', ninth: 'minor9', scaleDegree: 5 },
+            'vii°': { baseQuality: 'diminishedTriad', seventh: 'halfDiminished7', ninth: null, scaleDegree: 6 }
+        };
+
+        const naturalMinorKeyFunctionalChordsMap = {
+            'i': { baseQuality: 'minorTriad', seventh: 'minor7', ninth: 'minor9', scaleDegree: 0 },
+            'ii°': { baseQuality: 'diminishedTriad', seventh: 'halfDiminished7', ninth: null, scaleDegree: 1 },
+            'III': { baseQuality: 'majorTriad', seventh: 'major7', ninth: 'major9', scaleDegree: 2 },
+            'iv': { baseQuality: 'minorTriad', seventh: 'minor7', ninth: 'minor9', scaleDegree: 3 },
+            'v': { baseQuality: 'minorTriad', seventh: 'minor7', ninth: 'minor9', scaleDegree: 4 },
+            'VI': { baseQuality: 'majorTriad', seventh: 'major7', ninth: 'major9', scaleDegree: 5 },
+            'VII': { baseQuality: 'majorTriad', seventh: 'dominant7', ninth: 'dominant9', scaleDegree: 6 }
+        };
+        
+        const uniqueKeyRootsForDropdown = [
+            { name: 'C', value: 0 }, { name: 'C#', value: 1 }, { name: 'D', value: 2 }, 
+            { name: 'D#', value: 3 }, { name: 'E', value: 4 }, { name: 'F', value: 5 },
+            { name: 'F#', value: 6 }, { name: 'G', value: 7 }, { name: 'G#', value: 8 },
+            { name: 'A', value: 9 }, { name: 'A#', value: 10 }, { name: 'B', value: 11 }
+        ];
+
+        // --- DOM Elements ---
+        const scaleRootNoteSelect = document.getElementById('scaleRootNote');
+        const scaleTonalitySelect = document.getElementById('scaleTonality');
+        const showScaleButton = document.getElementById('showScaleButton');
+        const scaleOutput = document.getElementById('scaleOutput');
+
+        const chordKeyRootNoteSelect = document.getElementById('chordKeyRootNote');
+        const chordKeyTonalitySelect = document.getElementById('chordKeyTonality');
+        const functionalDegreeSelect = document.getElementById('functionalDegree');
+        const chordTypeSelect = document.getElementById('chordType');
+        const showChordButton = document.getElementById('showChordButton');
+        const chordOutput = document.getElementById('chordOutput');
+        
+        const circleSvg = document.getElementById('circleSvg');
+        const circleTooltip = document.getElementById('circleTooltip');
+
+        // Gemini API Feature DOM Elements
+        const progKeyRootNoteSelect = document.getElementById('progKeyRootNote');
+        const progKeyTonalitySelect = document.getElementById('progKeyTonality');
+        const progStartingDegreeSelect = document.getElementById('progStartingDegree');
+        const generateProgressionButton = document.getElementById('generateProgressionButton');
+        const progressionOutput = document.getElementById('progressionOutput');
+
+        const ideaKeyRootNoteSelect = document.getElementById('ideaKeyRootNote');
+        const ideaKeyTonalitySelect = document.getElementById('ideaKeyTonality');
+        const generateSongIdeaButton = document.getElementById('generateSongIdeaButton');
+        const songIdeaOutput = document.getElementById('songIdeaOutput');
+
+
+        // --- Populate Dropdowns ---
+        function populateKeyRootDropdowns() {
+            uniqueKeyRootsForDropdown.forEach(key => {
+                // For scale finder
+                const optionScale = document.createElement('option');
+                optionScale.value = key.name;
+                optionScale.textContent = key.name;
+                scaleRootNoteSelect.appendChild(optionScale);
+
+                // For chord finder
+                const optionChord = document.createElement('option');
+                optionChord.value = key.name;
+                optionChord.textContent = key.name;
+                chordKeyRootNoteSelect.appendChild(optionChord);
+
+                // For progression helper
+                const optionProgKey = document.createElement('option');
+                optionProgKey.value = key.name;
+                optionProgKey.textContent = key.name;
+                progKeyRootNoteSelect.appendChild(optionProgKey);
+
+                // For songwriting inspiration
+                const optionIdeaKey = document.createElement('option');
+                optionIdeaKey.value = key.name;
+                optionIdeaKey.textContent = key.name;
+                ideaKeyRootNoteSelect.appendChild(optionIdeaKey);
+            });
+        }
+
+        function populateFunctionalDegreeDropdown(selectElement, tonalityValue) {
+            selectElement.innerHTML = ''; // Clear previous options
+            const degreeMap = tonalityValue === 'major' ? majorKeyFunctionalChordsMap : naturalMinorKeyFunctionalChordsMap;
+            Object.keys(degreeMap).forEach(degree => {
+                const option = document.createElement('option');
+                option.value = degree;
+                option.textContent = degree;
+                selectElement.appendChild(option);
+            });
+        }
+        
+        // --- 音階計算與顯示 ---
+        function calculateAndShowScale() {
+            const rootNoteName = scaleRootNoteSelect.value;
+            const rootNoteValue = uniqueKeyRootsForDropdown.find(k => k.name === rootNoteName).value;
+            const tonality = scaleTonalitySelect.value;
+            const pattern = scalePatterns[tonality].intervals;
+            
+            const scaleNotes = pattern.map(interval => {
+                const noteIndex = (rootNoteValue + interval) % 12;
+                return getNoteName(noteIndex, rootNoteName);
+            });
+            scaleOutput.textContent = `音階： ${scaleNotes.join(' - ')}`;
+        }
+
+        // --- 和弦計算與顯示 ---
+        function calculateAndShowChord() {
+            const keyRootName = chordKeyRootNoteSelect.value;
+            const keyRootValue = uniqueKeyRootsForDropdown.find(k => k.name === keyRootName).value;
+            const keyTonality = chordKeyTonalitySelect.value;
+            const degree = functionalDegreeSelect.value;
+            const selectedChordType = chordTypeSelect.value;
+
+            const keyScalePattern = scalePatterns[keyTonality].intervals;
+            const functionalMap = keyTonality === 'major' ? majorKeyFunctionalChordsMap : naturalMinorKeyFunctionalChordsMap;
+            
+            if (!functionalMap[degree]) {
+                chordOutput.textContent = "無效的級數選擇。";
+                return;
+            }
+
+            const functionalChordInfo = functionalMap[degree];
+            const chordRootOffset = keyScalePattern[functionalChordInfo.scaleDegree];
+            const chordRootValue = (keyRootValue + chordRootOffset) % 12;
+            const chordRootName = getNoteName(chordRootValue, keyRootName);
+
+            let formula;
+            if (selectedChordType === 'triad') formula = chordFormulas[functionalChordInfo.baseQuality];
+            else if (selectedChordType === 'seventh') formula = functionalChordInfo.seventh ? chordFormulas[functionalChordInfo.seventh] : null;
+            else if (selectedChordType === 'ninth') formula = functionalChordInfo.ninth ? chordFormulas[functionalChordInfo.ninth] : null;
+            else if (selectedChordType === 'sus4') formula = chordFormulas.sus4;
+            else if (selectedChordType === 'sus2') formula = chordFormulas.sus2;
+            else if (selectedChordType === 'dominant7sus4') formula = chordFormulas.dominant7sus4;
+
+            if (!formula) {
+                chordOutput.textContent = `此級數 (${degree}) 通常沒有所選的 ${selectedChordType} 和弦類型。`;
+                return;
+            }
+
+            const chordNotes = formula.intervals.map(interval => {
+                const noteIndex = (chordRootValue + interval) % 12;
+                return getNoteName(noteIndex, keyRootName);
+            });
+            
+            chordOutput.textContent = `${keyRootName} ${keyTonality === 'major' ? '大調' : '小調'}中的 ${degree} 和弦 (${chordRootName} ${formula.name || selectedChordType}) 組成音： ${chordNotes.join(' - ')}`;
+        }
+
+        // --- 五度圈 ---
+        const circleData = [ 
+            { name: 'C', root: 0, relMinor: 'Am', relMinorRoot: 9, color: '#FF6B6B' },   
+            { name: 'G', root: 7, relMinor: 'Em', relMinorRoot: 4, color: '#FFD166' },   
+            { name: 'D', root: 2, relMinor: 'Bm', relMinorRoot: 11, color: '#06D6A0' },  
+            { name: 'A', root: 9, relMinor: 'F#m', relMinorRoot: 6, color: '#118AB2' },  
+            { name: 'E', root: 4, relMinor: 'C#m', relMinorRoot: 1, color: '#073B4C' },  
+            { name: 'B', root: 11, relMinor: 'G#m', relMinorRoot: 8, color: '#E76F51' }, 
+            { name: 'F#', root: 6, relMinor: 'D#m', relMinorRoot: 3, color: '#F4A261' }, 
+            { name: 'Db', root: 1, relMinor: 'Bbm', relMinorRoot: 10, color: '#E9C46A' },
+            { name: 'Ab', root: 8, relMinor: 'Fm', relMinorRoot: 5, color: '#2A9D8F' },  
+            { name: 'Eb', root: 3, relMinor: 'Cm', relMinorRoot: 0, color: '#264653' },  
+            { name: 'Bb', root: 10, relMinor: 'Gm', relMinorRoot: 7, color: '#A2D2FF' }, 
+            { name: 'F', root: 5, relMinor: 'Dm', relMinorRoot: 2, color: '#BDE0FE' }   
+        ];
+
+        function drawCircleOfFifths() {
+            const svgNS = "http://www.w3.org/2000/svg";
+            const width = parseInt(circleSvg.getAttribute('width') || 450);
+            const height = parseInt(circleSvg.getAttribute('height') || 450);
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const outerRadius = Math.min(centerX, centerY) * 0.9;
+            const innerRadius = outerRadius * 0.65;
+            const labelRadius = outerRadius * 0.82;
+            const relMinorLabelRadius = innerRadius * 0.8;
+            const numSegments = 12;
+            const angleStep = (2 * Math.PI) / numSegments;
+
+            for (let i = 0; i < numSegments; i++) {
+                const keyData = circleData[i];
+                const startAngle = i * angleStep - (Math.PI / 2) - (angleStep / 2); 
+                const endAngle = startAngle + angleStep;
+                const x1_outer = centerX + outerRadius * Math.cos(startAngle);
+                const y1_outer = centerY + outerRadius * Math.sin(startAngle);
+                const x2_outer = centerX + outerRadius * Math.cos(endAngle);
+                const y2_outer = centerY + outerRadius * Math.sin(endAngle);
+                const x1_inner = centerX + innerRadius * Math.cos(startAngle);
+                const y1_inner = centerY + innerRadius * Math.sin(startAngle);
+                const x2_inner = centerX + innerRadius * Math.cos(endAngle);
+                const y2_inner = centerY + innerRadius * Math.sin(endAngle);
+                const largeArcFlag = angleStep > Math.PI ? 1 : 0;
+                const pathData = `M ${x1_inner} ${y1_inner} L ${x1_outer} ${y1_outer} A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 1 ${x2_outer} ${y2_outer} L ${x2_inner} ${y2_inner} A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 0 ${x1_inner} ${y1_inner} Z`;
+                const segment = document.createElementNS(svgNS, "path");
+                segment.setAttribute("d", pathData);
+                segment.setAttribute("fill", keyData.color || "#cccccc");
+                segment.setAttribute("stroke", "#ffffff");
+                segment.setAttribute("stroke-width", "2");
+                segment.classList.add("key-segment");
+                Object.assign(segment.dataset, keyData);
+                
+                const textAngle = startAngle + angleStep / 2;
+                const majorText = document.createElementNS(svgNS, "text");
+                majorText.setAttribute("x", centerX + labelRadius * Math.cos(textAngle));
+                majorText.setAttribute("y", centerY + labelRadius * Math.sin(textAngle) + 5);
+                majorText.classList.add("circle-text");
+                majorText.textContent = keyData.name;
+                
+                const minorText = document.createElementNS(svgNS, "text");
+                minorText.setAttribute("x", centerX + relMinorLabelRadius * Math.cos(textAngle));
+                minorText.setAttribute("y", centerY + relMinorLabelRadius * Math.sin(textAngle) + 4);
+                minorText.classList.add("circle-text", "relative-minor-text");
+                minorText.textContent = keyData.relMinor;
+
+                circleSvg.appendChild(segment);
+                circleSvg.appendChild(majorText);
+                circleSvg.appendChild(minorText);
+
+                segment.addEventListener('mousemove', (e) => {
+                    const { keyName, keyRoot, relMinor, relMinorRoot } = e.target.dataset;
+                    const majorScaleNotes = scalePatterns.major.intervals.map(iv => getNoteName((parseInt(keyRoot) + iv) % 12, keyName)).join(', ');
+                    const minorScaleNotes = scalePatterns.minor.intervals.map(iv => getNoteName((parseInt(relMinorRoot) + iv) % 12, relMinor.replace('m',''))).join(', ');
+                    
+                    circleTooltip.innerHTML = `<strong>${keyName} 大調音階:</strong> ${majorScaleNotes}<br><strong>關係小調 (${relMinor}):</strong> ${relMinor} 自然小調音階: ${minorScaleNotes}`;
+                    circleTooltip.classList.add('visible');
+                    const rect = circleSvg.getBoundingClientRect();
+                    let x = e.clientX - rect.left + 20; 
+                    let y = e.clientY - rect.top + 20;  
+                    if (x + circleTooltip.offsetWidth > circleSvg.clientWidth) x = e.clientX - rect.left - circleTooltip.offsetWidth - 10;
+                    if (y + circleTooltip.offsetHeight > circleSvg.clientHeight) y = e.clientY - rect.top - circleTooltip.offsetHeight - 10;
+                    circleTooltip.style.left = `${x}px`;
+                    circleTooltip.style.top = `${y}px`;
+                });
+                segment.addEventListener('mouseout', () => circleTooltip.classList.remove('visible'));
+            }
+        }
+
+        // --- Gemini API Call Function ---
+        async function callGeminiAPI(prompt, outputElement) {
+            outputElement.innerHTML = '正在產生中... <div class="spinner"></div>';
+            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+            // IMPORTANT: Replace with your actual API key or leave empty for Canvas to provide.
+            const apiKey = "AIzaSyDEdlBmIHQKrGkqP9zDBIQ9YGBIlIIUkdw"; 
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("API Error Data:", errorData);
+                    throw new Error(`API 請求失敗，狀態：${response.status}. ${errorData?.error?.message || ''}`);
+                }
+                const result = await response.json();
+
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    outputElement.innerHTML = text.replace(/\n/g, '<br>');
+                } else {
+                    console.error("Gemini API 響應格式不符合預期:", result);
+                     let errorMessage = "無法從 API 獲取有效的建議。";
+                    if (result.promptFeedback && result.promptFeedback.blockReason) {
+                        errorMessage += ` 原因：${result.promptFeedback.blockReason}`;
+                         if (result.promptFeedback.safetyRatings) {
+                            errorMessage += ` 安全評級： ${result.promptFeedback.safetyRatings.map(r => `${r.category}: ${r.probability}`).join(', ')}`;
+                        }
+                    }
+                    outputElement.textContent = errorMessage;
+                }
+            } catch (error) {
+                console.error("調用 Gemini API 時出錯:", error);
+                outputElement.textContent = `產生建議時出錯：${error.message}`;
+            }
+        }
+
+        // --- Event Listeners for Gemini Features ---
+        generateProgressionButton.addEventListener('click', async () => {
+            const keyRoot = progKeyRootNoteSelect.value;
+            const keyTonality = progKeyTonalitySelect.value === 'major' ? '大調' : '小調';
+            const startingDegree = progStartingDegreeSelect.value;
+            const prompt = `請為 ${keyRoot} ${keyTonality} 提供 3 個常見的和弦進行建議。請從 ${startingDegree} 和弦開始。每個建議請另起一行，並使用羅馬數字分析法（例如：I - V - vi - IV）呈現。`;
+            await callGeminiAPI(prompt, progressionOutput);
+        });
+
+        generateSongIdeaButton.addEventListener('click', async () => {
+            const keyRoot = ideaKeyRootNoteSelect.value;
+            const keyTonality = ideaKeyTonalitySelect.value === 'major' ? '大調' : '小調';
+            const prompt = `請為 ${keyRoot} ${keyTonality} 的歌曲提供 3 個簡短的創作靈感或主題。著重於情緒和歌詞概念。每個靈感應為一個短段落。`;
+            await callGeminiAPI(prompt, songIdeaOutput);
+        });
+
+
+        // --- Event Listeners (Original) ---
+        showScaleButton.addEventListener('click', calculateAndShowScale);
+        showChordButton.addEventListener('click', calculateAndShowChord);
+        chordKeyTonalitySelect.addEventListener('change', () => {
+            populateFunctionalDegreeDropdown(functionalDegreeSelect, chordKeyTonalitySelect.value);
+        });
+        // Event listener for progression helper's starting degree dropdown
+        progKeyTonalitySelect.addEventListener('change', () => {
+            populateFunctionalDegreeDropdown(progStartingDegreeSelect, progKeyTonalitySelect.value);
+        });
+
+
+        // --- Initialization ---
+        populateKeyRootDropdowns();
+        populateFunctionalDegreeDropdown(functionalDegreeSelect, chordKeyTonalitySelect.value); // For chord finder
+        populateFunctionalDegreeDropdown(progStartingDegreeSelect, progKeyTonalitySelect.value); // For progression helper
+        drawCircleOfFifths();
+    </script>
+</body>
+</html>
